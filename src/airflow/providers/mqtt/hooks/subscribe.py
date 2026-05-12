@@ -24,7 +24,7 @@ import asyncio
 from airflow.providers.mqtt.hooks.base import MqttBaseHook
 from airflow.providers.common.compat.module_loading import import_string
 
-from paho.mqtt import SubscribeOptions
+from paho.mqtt.subscribeoptions import SubscribeOptions
 
 class MqttSubscriberHook(MqttBaseHook):
     
