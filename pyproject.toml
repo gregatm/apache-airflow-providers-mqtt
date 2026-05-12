@@ -22,8 +22,13 @@ build-backend = "flit_core.buildapi"
 [project]
 name = "apache-airflow-providers-mqtt"
 version = "0.1.0"
+authors = [
+  { name="gregatm", email="108521916+gregatm@users.noreply.github.com" }
+]
 description = "Provider package apache-airflow-providers-mqtt for Apache Airflow"
+readme = "README.md"
 requires-python = ">=3.10"
+license = "Apache-2.0"
 
 dependencies = [
   "apache-airflow>=2.11.0",
@@ -32,6 +37,11 @@ dependencies = [
   "paho-mqtt>=2.1.0",
   "PySocks"
 ]
+
+[project.urls]
+Homepage = "https://github.com/gregatm/apache-airflow-providers-mqtt"
+Issues = "https://github.com/gregatm/apache-airflow-providers-mqtt/issues"
+
 
 [project.entry-points."apache_airflow_provider"]
 provider_info = "airflow.providers.mqtt.get_provider_info:get_provider_info"
