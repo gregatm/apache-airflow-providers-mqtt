@@ -21,7 +21,7 @@ build-backend = "flit_core.buildapi"
 
 [project]
 name = "apache-airflow-providers-mqtt"
-version = "0.1.0"
+version = "0.2.0"
 authors = [
   { name="gregatm", email="108521916+gregatm@users.noreply.github.com" }
 ]
