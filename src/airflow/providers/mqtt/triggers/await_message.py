@@ -84,7 +84,7 @@ class AwaitMessageTrigger(BaseEventTrigger):
                 else:
                     yield TriggerEvent({
                         "topic": msg.topic,
-                        "msg": msg.payload,
+                        "msg": msg.payload.decode(),
                         "retain": msg.retain,
                         "qos": msg.qos,
                         "timestamp": msg.timestamp,
