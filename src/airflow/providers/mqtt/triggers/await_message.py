@@ -39,14 +39,16 @@ class AwaitMessageTrigger(BaseEventTrigger):
     def __init__(
             self,
             topics: Sequence[str],
-            mqtt_conn_id: str = "mqtt_default",
             apply_function: str | None = None,
+            mqtt_conn_id: str = "mqtt_default",
+            apply_function_args: Sequence[Any] | None = None,
             apply_function_kwargs: dict[Any, Any] | None = None,
     ) -> None:
         self.topics = topics
-        self.mqtt_conn_id = mqtt_conn_id,
+        self.mqtt_conn_id = mqtt_conn_id
         self.apply_function = apply_function
-        self.apply_function_kwargs = apply_function_kwargs or {}
+        self.apply_function_args = apply_function_args
+        self.apply_function_kwargs = apply_function_kwargs if apply_function_kwargs is None or "Encoding.VAR" not in apply_function_kwargs else apply_function_kwargs["Encoding.VAR"]
         self._subscriber = None
     
     def serialize(self) -> tuple[str, dict[str, Any]]:
@@ -56,6 +58,7 @@ class AwaitMessageTrigger(BaseEventTrigger):
                     "topics": self.topics,
                     "mqtt_conn_id": self.mqtt_conn_id,
                     "apply_function": self.apply_function,
+                    "apply_function_args": self.apply_function_args,
                     "apply_function_kwargs": self.apply_function_kwargs
                 }
         )
@@ -69,7 +72,7 @@ class AwaitMessageTrigger(BaseEventTrigger):
         if self.apply_function:
             message_processing = import_string(self.apply_function)
             message_processing = partial(
-                message_processing, *self.apply_function_args, **self.apply_function_kwargs
+                message_processing, *(self.apply_function_args or ()), **(self.apply_function_kwargs or {})
             )
         while isRunning:
             try:

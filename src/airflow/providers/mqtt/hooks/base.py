@@ -17,9 +17,6 @@
 
 from __future__ import annotations
 
-from functools import cached_property
-from typing import Any
-
 from paho.mqtt import client as mqtt, enums as mqtt_enums
 import socks
 import random
@@ -40,10 +37,13 @@ class MqttBaseHook(BaseHook):
         super().__init__()
         self.mqtt_config_id = mqtt_config_id
 
-    def get_conn(self) -> asyncio.Future[mqtt.Client]:
+    async def get_conn(self) -> mqtt.Client:
 
-        config = self.get_connection(self.mqtt_config_id)
-
+        config = await self.aget_connection(self.mqtt_config_id)
+        
+        loop = asyncio.get_running_loop()
+        connected = loop.create_future()
+        
         mqtt_version = mqtt.MQTTv311
 
         extra = config.extra_dejson
@@ -140,18 +140,15 @@ class MqttBaseHook(BaseHook):
             if extra["debug"]:
                 client.enable_logger()
         
-        loop = asyncio.get_event_loop()
-        connected = loop.create_future()
-        
         def mqtt_on_connect(client, userdata, flags, rc, properties):
             if rc == 0:
                 self.log.info("Connected to broker")
                 if userdata:
-                    userdata.set_result(client)
+                    userdata.get_loop().call_soon_threadsafe(userdata.set_result, client)
             else:
                 self.log.error("Failed to connect to broker: %s", rc)
                 if userdata:
-                    userdata.set_exception(ValueError(rc))
+                    userdata.get_loop().call_soon_threadsafe(userdata.set_exception, ValueError(rc))
             client.user_data_set(None)
         
         def mqtt_on_connect_fail(client, userdata):
@@ -173,15 +170,15 @@ class MqttBaseHook(BaseHook):
        
         self._client = client
 
-        return connected
+        return await connected
     
     def disconnect(self) -> asyncio.Future[None]:
         
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         fut = loop.create_future()
         def mqtt_final_on_disconnect(client, userdata, flags, rc, properties):
             self.log.info("Disconnected mqtt client")
-            fut.set_result(None)
+            fut.get_loop().call_soon_threadsafe(fut.set_result, None)
             client.loop_stop()
         
         self._client.on_disconnect = mqtt_final_on_disconnect

@@ -17,8 +17,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-
 import asyncio
 
 from airflow.providers.mqtt.hooks.base import MqttBaseHook
@@ -35,12 +33,12 @@ class MqttSubscriberHook(MqttBaseHook):
 
     async def get_subscription(self):
         
-        loop = asyncio.get_event_loop()
+        loop = asyncio.get_running_loop()
         subscribed = loop.create_future()
 
         def on_message(client, userdata, msg):
             self.log.debug("Received message: %s", msg)
-            self.queue.put_nowait(msg)
+            loop.call_soon_threadsafe(self.queue.put_nowait, msg)
         
         def on_subscribe(client, userdata, mid, rc_list, properties):
             failed = False
@@ -51,12 +49,12 @@ class MqttSubscriberHook(MqttBaseHook):
                     failed = True
                     failed_topics.append(topic)
             if failed:
-                subscribed.set_exception(ValueError("Failed to subscribe to topics", failed_topics))
+                subscribed.get_loop().call_soon_threadsafe(subscribed.set_exception, ValueError("Failed to subscribe to topics", failed_topics))
             else:
                 self.log.info("Successfully subscribed to topics: %s", rc_list)
-                subscribed.set_result(None)
+                subscribed.get_loop().call_soon_threadsafe(subscribed.set_result, None)
 
-        self.client = self.get_conn
+        self.client = await self.get_conn()
         self.client.on_subscribe = on_subscribe
 
         self.log.debug("Subscribe to topics: %s", self.topics)
