@@ -22,6 +22,7 @@ import logging
 from collections.abc import Sequence
 from functools import partial
 from typing import Any
+import inspect
 
 from airflow.providers.mqtt.hooks.subscribe import MqttSubscriberHook
 from airflow.providers.mqtt.version_compat import AIRFLOW_V_3_0_PLUS
@@ -71,6 +72,7 @@ class AwaitMessageTrigger(BaseEventTrigger):
         message_processing = None
         if self.apply_function:
             message_processing = import_string(self.apply_function)
+            message_processing_async = inspect.iscoroutinefunction(message_processing)
             message_processing = partial(
                 message_processing, *(self.apply_function_args or ()), **(self.apply_function_kwargs or {})
             )
@@ -79,6 +81,8 @@ class AwaitMessageTrigger(BaseEventTrigger):
                 msg = await subscription.get()
                 if message_processing:
                     msg = message_processing(msg)
+                    if message_processing_async:
+                        msg = await msg
                     if msg is not None:
                         yield TriggerEvent(msg)
                 else:

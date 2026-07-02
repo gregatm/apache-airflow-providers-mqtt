@@ -21,6 +21,7 @@ import asyncio
 
 from airflow.providers.mqtt.hooks.base import MqttBaseHook
 from airflow.providers.common.compat.module_loading import import_string
+from datetime import datetime
 
 from paho.mqtt.subscribeoptions import SubscribeOptions
 
@@ -38,6 +39,7 @@ class MqttSubscriberHook(MqttBaseHook):
 
         def on_message(client, userdata, msg):
             self.log.debug("Received message: %s", msg)
+            msg.timestamp = datetime.now().astimezone().isoformat()
             loop.call_soon_threadsafe(self.queue.put_nowait, msg)
         
         def on_subscribe(client, userdata, mid, rc_list, properties):
